@@ -7,6 +7,16 @@ body {
   background: #fcfcfc;
   margin: 0
 }
+#animation {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 circle {
   stroke: #000;
   stroke-opacity: .5;
@@ -16,23 +26,27 @@ circle {
   font-size: 14px;
   font-family: "Helvetica Neue", Helvetica, sans-serif;
   white-space: nowrap;
-  margin: -40px 20px 20px 20px;
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
 }
 </style>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 </head>
 <body>
-  <div id="animation"> </div>
-  <div id="readout"> </div>
+  <div id="animation"></div>
+  <div id="readout"></div>
 <script>
 
 // http://stackoverflow.com/questions/9539294/adding-new-nodes-to-force-directed-layout
 // http://bl.ocks.org/mbostock/1804919 -- original
 // http://bl.ocks.org/mbostock/1095795 -- add/remove elements
 
-var margin = {top: 0, right: 0, bottom: 60, left: 0},
-    width = 800 - margin.left - margin.right,
-    height = 250 - margin.top - margin.bottom;
+var margin = {top: 0, right: -100, bottom: 0, left: 0}
+  , verticalCenterPercentage = .25 // The bubbles wil generally stay in this middle percentage of the screen
+  , width
+  , height;
+setWidthHeight();
 
 var padding = 6
   , radius = d3.scale.sqrt().domain([0,5000]).range([5, 15])
@@ -40,6 +54,11 @@ var padding = 6
 
 function readout(text) {
   d3.select("#readout").text(text);
+}
+
+function setWidthHeight() {
+  width = window.innerWidth - margin.left - margin.right,
+  height = window.innerHeight - margin.top - margin.bottom;
 }
 
 var nodes = [];
@@ -53,8 +72,6 @@ var force = d3.layout.force()
     .start();
 
 var svg = d3.select("#animation").append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -79,8 +96,11 @@ function tick(e) {
     arrival.id = id++;
     arrival.radius = radius(transaction.server);
     arrival.color = color(transaction.request);
-    arrival.cx = arrival.x = 10;
-    arrival.cy = arrival.y = height / 2 + Math.random()*30;
+    arrival.cx = arrival.x = 0;
+    arrival.cy = arrival.y = (height * verticalCenterPercentage * Math.random()) // A Random spot within the verticalCenterPercentage
+                           + (((1 - verticalCenterPercentage) * height) / 2) // Scooted down so that the top and bottom have even padding
+                           - 15; // And scooted up to accomodate the height of the bottom label
+
     arrival.start = now;
     nodes.push(arrival);
   });
@@ -201,6 +221,12 @@ function playback (error, json) {
 
 d3.json("nr-queuing-spike-zoom.json", playback);
 
+var resizeTimer;
+
+window.onresize = function() {
+  window.clearInterval(resizeTimer);
+  resizeTimer = setInterval(function(){ this.setWidthHeight(); },300);
+}
 
 </script>
 </body>
